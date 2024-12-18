@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/student.dart';
+import '../models/department.dart';
 
 class NewStudent extends StatefulWidget {
   final Student? student;
@@ -79,11 +80,21 @@ class _NewStudentState extends State<NewStudent> {
             ),
             DropdownButton<Department>(
               value: selectedDepartment,
-              hint: Text('Select Department'),
+              hint: const Text('Select Department'),
               items: Department.values.map((dept) {
                 return DropdownMenuItem(
                   value: dept,
-                  child: Text(dept.toString().split('.').last),
+                  child: Row(
+                    children: [
+                      Icon(
+                        departmentIcons[dept],
+                        size: 24,
+                        color: Colors.deepPurple,
+                      ),
+                      const SizedBox(width: 8), // Отступ между иконкой и текстом
+                      Text(departmentNames[dept] ?? dept.toString().split('.').last),
+                    ],
+                  ),
                 );
               }).toList(),
               onChanged: (value) => setState(() => selectedDepartment = value),
