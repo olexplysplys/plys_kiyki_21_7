@@ -6,10 +6,10 @@ class DepartmentItem extends StatelessWidget {
   final int studentCount;
 
   const DepartmentItem({
-    Key? key,
+    super.key,
     required this.department,
     required this.studentCount,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

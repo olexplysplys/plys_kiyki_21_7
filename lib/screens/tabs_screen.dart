@@ -3,7 +3,7 @@ import 'departments_screen.dart';
 import 'students_screen.dart';
 
 class TabsScreen extends StatefulWidget {
-  const TabsScreen({Key? key}) : super(key: key);
+  const TabsScreen({super.key});
 
   @override
   _TabsScreenState createState() => _TabsScreenState();

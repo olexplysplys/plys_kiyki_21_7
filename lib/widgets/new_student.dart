@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 import '../models/student.dart';
 import '../models/department.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/students_provider.dart';
 
-class NewStudent extends StatefulWidget {
-  final Student? student;
-  final Function(Student) onSave;
+class NewStudent extends ConsumerStatefulWidget {
+  const NewStudent({
+    super.key,
+    this.curIndex
+  });
 
-  const NewStudent({Key? key, this.student, required this.onSave}) : super(key: key);
+  final int? curIndex;
 
   @override
-  _NewStudentState createState() => _NewStudentState();
+  ConsumerState<ConsumerStatefulWidget> createState() => _NewStudentState();
 }
 
-class _NewStudentState extends State<NewStudent> {
+class _NewStudentState extends ConsumerState<NewStudent> {
   final TextEditingController firstNameController = TextEditingController();
   final TextEditingController lastNameController = TextEditingController();
   final TextEditingController gradeController = TextEditingController();
@@ -22,30 +26,44 @@ class _NewStudentState extends State<NewStudent> {
   @override
   void initState() {
     super.initState();
-    if (widget.student != null) {
-      firstNameController.text = widget.student!.firstName;
-      lastNameController.text = widget.student!.lastName;
-      gradeController.text = widget.student!.grade.toString();
-      selectedDepartment = widget.student!.department;
-      selectedGender = widget.student!.gender;
+    if (widget.curIndex != null) {
+      final student = ref.read(studentsProvider).studentList[widget.curIndex!];
+      firstNameController.text = student.firstName;
+      lastNameController.text = student.lastName;
+      gradeController.text = student.grade.toString();
+      selectedGender = student.gender;
+      selectedDepartment = student.department;
     }
   }
 
-  void saveStudent() {
+  void saveStudent() async {
     final firstName = firstNameController.text;
     final lastName = lastNameController.text;
     final grade = int.tryParse(gradeController.text) ?? 0;
-    if (selectedDepartment != null && selectedGender != null) {
-      final newStudent = Student(
-        firstName: firstName,
-        lastName: lastName,
-        department: selectedDepartment!,
-        grade: grade,
-        gender: selectedGender!,
-      );
-      widget.onSave(newStudent);
-      Navigator.pop(context);
+
+    
+    if (widget.curIndex != null) {
+      await ref.read(studentsProvider.notifier).editStudent(
+            widget.curIndex!,
+            firstName,
+            lastName,
+            selectedDepartment,
+            selectedGender,
+            grade,
+          );
+    } else {
+      await ref.read(studentsProvider.notifier).addStudent(
+            firstName,
+            lastName,
+            selectedDepartment,
+            selectedGender,
+            grade,
+          );
     }
+
+    if (!context.mounted) return;
+
+    Navigator.of(context).pop();
   }
 
   void cancel() {
@@ -54,6 +72,10 @@ class _NewStudentState extends State<NewStudent> {
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(studentsProvider);
+    if (state.requestingToNet) {
+      return const Center(child: CircularProgressIndicator());
+    }
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.only(
@@ -67,15 +89,15 @@ class _NewStudentState extends State<NewStudent> {
           children: [
             TextField(
               controller: firstNameController,
-              decoration: InputDecoration(labelText: 'First Name'),
+              decoration: const InputDecoration(labelText: 'First Name'),
             ),
             TextField(
               controller: lastNameController,
-              decoration: InputDecoration(labelText: 'Last Name'),
+              decoration: const InputDecoration(labelText: 'Last Name'),
             ),
             TextField(
               controller: gradeController,
-              decoration: InputDecoration(labelText: 'Grade'),
+              decoration: const InputDecoration(labelText: 'Grade'),
               keyboardType: TextInputType.number,
             ),
             DropdownButton<Department>(
@@ -91,7 +113,7 @@ class _NewStudentState extends State<NewStudent> {
                         size: 24,
                         color: Colors.deepPurple,
                       ),
-                      const SizedBox(width: 8), // Отступ между иконкой и текстом
+                      const SizedBox(width: 8),
                       Text(departmentNames[dept] ?? dept.toString().split('.').last),
                     ],
                   ),
@@ -101,7 +123,7 @@ class _NewStudentState extends State<NewStudent> {
             ),
             DropdownButton<Gender>(
               value: selectedGender,
-              hint: Text('Select Gender'),
+              hint: const Text('Select Gender'),
               items: Gender.values.map((gen) {
                 return DropdownMenuItem(
                   value: gen,
@@ -110,18 +132,18 @@ class _NewStudentState extends State<NewStudent> {
               }).toList(),
               onChanged: (value) => setState(() => selectedGender = value),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 ElevatedButton(
                   onPressed: saveStudent,
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                  child: Text('Save'),
+                  child: const Text('Save'),
                 ),
                 TextButton(
                   onPressed: cancel,
-                  child: Text('Cancel', style: TextStyle(color: Colors.red)),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.red)),
                 ),
               ],
             ),

@@ -6,26 +6,15 @@ import '../widgets/student_item.dart';
 import '../widgets/new_student.dart';
 
 class StudentsScreen extends ConsumerWidget {
-  const StudentsScreen({Key? key}) : super(key: key);
+  const StudentsScreen({super.key});
 
   void _addOrEditStudent(BuildContext context, WidgetRef ref,
-      {Student? student, int? index}) {
+      {int? index}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (_) {
-        return NewStudent(
-          student: student,
-          onSave: (newStudent) {
-            if (student != null && index != null) {
-              ref
-                  .read(studentsProvider.notifier)
-                  .editStudent(newStudent, index);
-            } else {
-              ref.read(studentsProvider.notifier).addStudent(newStudent);
-            }
-          },
-        );
+        return NewStudent(curIndex: index,);
       },
     );
   }
@@ -43,21 +32,43 @@ class StudentsScreen extends ConsumerWidget {
           },
         ),
       ),
-    );
+    ).closed.then((value) {
+      if (value != SnackBarClosedReason.action) {
+        ref.read(studentsProvider.notifier).erase();
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final students = ref.watch(studentsProvider);
+    final state = ref.watch(studentsProvider);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (state.failedStr != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              state.failedStr!,
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    });
+
+    if (state.requestingToNet) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Студенти'),
       ),
       body: ListView.builder(
-        itemCount: students.length,
+        itemCount: state.studentList.length,
         itemBuilder: (context, index) {
-          final student = students[index];
+          final student = state.studentList[index];
           return Dismissible(
             key: ValueKey(student),
             background: Container(
@@ -69,8 +80,7 @@ class StudentsScreen extends ConsumerWidget {
             direction: DismissDirection.startToEnd,
             onDismissed: (_) => _deleteStudent(context, ref, index),
             child: InkWell(
-              onTap: () => _addOrEditStudent(context, ref,
-                  student: student, index: index),
+              onTap: () => _addOrEditStudent(context, ref,index: index),
               child: StudentItem(student: student),
             ),
           );

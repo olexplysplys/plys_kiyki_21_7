@@ -4,11 +4,15 @@ import '../providers/students_provider.dart';
 import '../models/department.dart';
 
 class DepartmentsScreen extends ConsumerWidget {
-  const DepartmentsScreen({Key? key}) : super(key: key);
+  const DepartmentsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final students = ref.watch(studentsProvider);
+    final state = ref.watch(studentsProvider);
+
+    if (state.requestingToNet) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -24,7 +28,7 @@ class DepartmentsScreen extends ConsumerWidget {
         itemCount: Department.values.length,
         itemBuilder: (context, index) {
           final department = Department.values[index];
-          final studentCount = students
+          final studentCount = state.studentList
               .where((student) => student.department == department)
               .length;
 
